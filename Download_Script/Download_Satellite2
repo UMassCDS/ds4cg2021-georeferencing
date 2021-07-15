@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#LOC=/mnt/d/MacConnell/test/
+
+LOC="C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/sat_sample"
+
+while read -r link name; do
+  mkdir "$LOC""$name"/
+  wget "$link" -P "$LOC""$name"
+  unzip "$LOC""$name"/"$name".zip -d "$LOC""$name"/
+  rm "$LOC""$name"/"$name".zip
+done <List_small.txt
