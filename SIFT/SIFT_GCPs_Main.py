@@ -10,21 +10,21 @@ mac = cv2.imread('Images/River_Mac.jpg')
 mod = cv2.imread('Images/River_Mod.jpg')
 
 # preprocess the images
-cornersMac, cornersMod, keypointsMac,keypointsMod = helper.preprocess_images(mac, mod)
+cornersMac, cornersMod, keypointsMac, keypointsMod = helper.preprocess_images(mac, mod)
 
 # generate SIFT
 sift = cv2.SIFT_create()
 
 # generate their descriptors using sift
 
-descriptorsMac = sift.compute(mac,keypointsMac)
-descriptorsMod = sift.compute(mod,keypointsMod)
+descriptorsMac = sift.compute(mac, keypointsMac)
+descriptorsMod = sift.compute(mod, keypointsMod)
 
 # brute force feature matching of descriptors to match keypoints
 bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
 #                      query            train
 matches = sorted(bf.match(descriptorsMac[1], descriptorsMod[1]), key=lambda x: x.distance)
-#matches = matches[:-int((len(matches) / 4) * 3)]
+# matches = matches[:-int((len(matches) / 4) * 3)]
 
 '''# Visulaizing the matches from corners as keypoints
 img3 = cv2.drawMatches(mac, keypointsMac, mod, keypointsMod, matches[:50], mod, flags=2)

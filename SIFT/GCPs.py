@@ -36,20 +36,20 @@ def preprocess_images(mac, mod):
     edges_mod = cv2.Canny(gray_mod, 100, 200)
     '''return edges_mac,edges_mod'''
 
-    harris_mac = np.zeros(np.shape(gray_mac),dtype='uint8')
-    harris_mod = np.zeros(np.shape(gray_mod),dtype='uint8')
-    #perform harry corner detection
-    corners_mac = cv2.cornerHarris(gray_mac,2,3,0.04)
-    corners_mod = cv2.cornerHarris(gray_mod,2,3,0.04)
-    harris_mac[corners_mac>0.01*corners_mac.max()]=255
-    harris_mod[corners_mod>0.01*corners_mod.max()]=255
+    harris_mac = np.zeros(np.shape(gray_mac), dtype='uint8')
+    harris_mod = np.zeros(np.shape(gray_mod), dtype='uint8')
+    # perform harry corner detection
+    corners_mac = cv2.cornerHarris(gray_mac, 2, 3, 0.04)
+    corners_mod = cv2.cornerHarris(gray_mod, 2, 3, 0.04)
+    harris_mac[corners_mac > 0.01 * corners_mac.max()] = 255
+    harris_mod[corners_mod > 0.01 * corners_mod.max()] = 255
 
-    mac_keypoints_idx = np.where(corners_mac>0.01*corners_mac.max())
-    mac_keypoints = [cv2.KeyPoint(float(r),float(c),10) for r,c in zip(mac_keypoints_idx[1], mac_keypoints_idx[0])]
+    mac_keypoints_idx = np.where(corners_mac > 0.01 * corners_mac.max())
+    mac_keypoints = [cv2.KeyPoint(float(r), float(c), 10) for r, c in zip(mac_keypoints_idx[1], mac_keypoints_idx[0])]
 
-    mod_keypoints_idx = np.where(corners_mod>0.01*corners_mod.max())
-    mod_keypoints = [cv2.KeyPoint(float(r),float(c),10) for r,c in zip(mod_keypoints_idx[1], mod_keypoints_idx[0])]
-    return edges_mac, edges_mod,mac_keypoints,mod_keypoints
+    mod_keypoints_idx = np.where(corners_mod > 0.01 * corners_mod.max())
+    mod_keypoints = [cv2.KeyPoint(float(r), float(c), 10) for r, c in zip(mod_keypoints_idx[1], mod_keypoints_idx[0])]
+    return edges_mac, edges_mod, mac_keypoints, mod_keypoints
 
 
 # takes the list of keypoint matches, and the lists of all keypoints and returns a dictionary {match: (length, slope)}
@@ -61,11 +61,10 @@ def line_slopes_lengths(matches, keypointsMac, keypointsMod):
         # calculate length and slope
         length = np.linalg.norm(np.array(keypointsMac[query].pt) -
                                 np.array(keypointsMod[train].pt))
-        if keypointsMac[query].pt[0] - keypointsMod[train].pt[0]==0:
+        if keypointsMac[query].pt[0] - keypointsMod[train].pt[0] == 0:
             continue
         else:
             slope = (keypointsMac[query].pt[1] - keypointsMod[train].pt[1]) / \
                     (keypointsMac[query].pt[0] - keypointsMod[train].pt[0])
         lines[match] = (length, slope)
     return lines
-
