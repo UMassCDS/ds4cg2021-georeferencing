@@ -5,6 +5,7 @@ from collections import Counter
 from sklearn.cluster import OPTICS
 import GCPs as helper
 
+
 # read images
 mac = cv2.imread('Images/River_Mac.jpg')
 mod = cv2.imread('Images/River_Mod.jpg')
