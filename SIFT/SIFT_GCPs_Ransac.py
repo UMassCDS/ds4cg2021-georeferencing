@@ -5,14 +5,16 @@ from collections import Counter
 from sklearn.cluster import OPTICS
 import GCPs as helper
 import time
+import image_helper as imghelper
 import latlong as latlonghelper
 from osgeo import gdal
 
 # read images
-mac = cv2.imread(
-    'C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/mufs190-1952-cni5h100-i001.reference.tif')
-mod = cv2.imread('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/sat_sample/18TXM900605/18TXM900605.jp2')
+mac_original = cv2.imread('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/mufs190-1952-dpb6h112-i001.reference.tif')
+mod = cv2.imread('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/sat_sample/18TXM990890/18TXM990890.jp2') 
 
+quad = imghelper.make_quadrants(mac_original)
+mac = quad[0]
 # storing the scaling ratio
 mac_resize = [600 / mac.shape[0], 600 / mac.shape[1]]
 mod_resize = [600 / mod.shape[0], 600 / mod.shape[1]]
@@ -55,10 +57,8 @@ dst = cv2.perspectiveTransform(pts, M)
 img2 = cv2.polylines(cornersMod, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
 
 # Reading the same images using gdal to obtain EPSG info
-mac_img = gdal.Open(
-    "C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/mufs190-1952-cni5h100-i001.reference.tif")
-mod_img = gdal.Open('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/sat_sample/18TXM900605/18TXM900605.jp2',
-                    gdal.GA_ReadOnly)
+mac_img= gdal.Open('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/mufs190-1952-dpb6h112-i001.reference.tif')
+mod_img = gdal.Open('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/sat_sample/18TXM990890/18TXM990890.jp2',gdal.GA_ReadOnly)
 
 # For all the matches in ransac find the pixel to coord for mac and mod
 for i in range(0, len(matchesMask)):
