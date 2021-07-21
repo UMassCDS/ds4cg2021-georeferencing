@@ -2,6 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import GCPs as helper
+import image_helper as imghelper
 import latlong as latlonghelper
 from osgeo import gdal
 import pandas as pd
@@ -10,26 +11,29 @@ if __name__ == '__main__':
     # read mac
     mac = cv2.imread('Images/mufs190-1952-dpb6h112-i001.reference.tif')
     mac_img = gdal.Open('Images/mufs190-1952-dpb6h112-i001.reference.tif')
-    # storing the scaling ratio for mac
+    # get the quadrants for this image
+    quads = imghelper.make_quadrants(mac)
+    # define the new image scale
     x_scaled = 600
     y_scaled = 600
-    mac_resize = [x_scaled / mac.shape[0], y_scaled / mac.shape[1]]
-    # resizing mac
-    mac = cv2.resize(mac, (x_scaled, y_scaled))
 
     # get the satellite tiles for this macconnell image
     df = pd.read_csv('Data/Mapping.csv')
     tiles = df.loc[df['MacFile'] == 'D:\\MacConnell\\Photos_Original\\b006\\mufs190-1952-dpb6h112-i001-001.tif'] \
-    [['Tile1', 'Tile2', 'Tile3', 'Tile4', 'Tile5', 'Tile6', 'Tile7', 'Tile8', 'Tile9']]
+        [['Tile1', 'Tile2', 'Tile3', 'Tile4', 'Tile5', 'Tile6', 'Tile7', 'Tile8', 'Tile9']]
 
     total, n = 0, 0
-    for tile in tiles.values[0]:
-        if tile is not None:
+    for q, tile in enumerate(tiles.values[0]):
+        if tile is not None and q == 0:
+            # get correct quadrant
+            mac = quads[q]
             # read mod
             mod = cv2.imread(tile)
             # store scaling ratio
+            mac_resize = [x_scaled / mac.shape[0], y_scaled / mac.shape[1]]
             mod_resize = [x_scaled / mod.shape[0], y_scaled / mod.shape[1]]
-            # resize mod
+            # resize the images
+            mac = cv2.resize(mac, (x_scaled, y_scaled))
             mod = cv2.resize(mod, (x_scaled, y_scaled))
 
             # preprocess the images and generate keypoints from Harris Corner Detection
@@ -53,7 +57,7 @@ if __name__ == '__main__':
             dst_pts = np.float32([keypointsMod[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
             # apply RANSAC
-            _, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
             # value is 1 for the inliers from RANSAC
             matchesMask = mask.ravel().tolist()
 
@@ -88,8 +92,8 @@ if __name__ == '__main__':
                     total += distance
                     n += 1
 
-            # draw_params = dict(matchesMask=matchesMask, flags=2)
-            # img3 = cv2.drawMatches(mac, keypointsMac, mod, keypointsMod, matches, None, **draw_params)
-            # plt.imshow(img3, 'gray'), plt.show()
+            draw_params = dict(matchesMask=matchesMask, flags=2)
+            img3 = cv2.drawMatches(mac, keypointsMac, mod, keypointsMod, matches, None, **draw_params)
+            plt.imshow(img3, 'gray'), plt.show()
 
     print(f'Average distance: {total / n} KMs')
