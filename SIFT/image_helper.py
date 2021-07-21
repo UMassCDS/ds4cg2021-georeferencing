@@ -1,5 +1,6 @@
 import cv2
 
+
 def make_quadrants(img):
     quadrants = []
     height = img.shape[0]
@@ -14,10 +15,7 @@ def make_quadrants(img):
     l2 = img[:, :width_cutoff]
     l1 = img[:, width_cutoff:]
     l2 = cv2.rotate(l2, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    quadrants.append(l2)
-
     l1 = cv2.rotate(l1, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    quadrants.append(l1)
 
     img = cv2.rotate(right1, cv2.ROTATE_90_CLOCKWISE)
     # start vertical devide image
@@ -28,12 +26,13 @@ def make_quadrants(img):
     r4 = img[:, :width_cutoff]
     r3 = img[:, width_cutoff:]
     # finish vertical devide image
-    #rotate image to 90 COUNTERCLOCKWISE
+    # rotate image to 90 COUNTERCLOCKWISE
     r4 = cv2.rotate(r4, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    #save
-    quadrants.append(r4)
-    #rotate image to 90 COUNTERCLOCKWISE
+    # rotate image to 90 COUNTERCLOCKWISE
     r3 = cv2.rotate(r3, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    #save
+    # save
+    quadrants.append(l1)
     quadrants.append(r3)
+    quadrants.append(l2)
+    quadrants.append(r4)
     return quadrants

@@ -24,9 +24,10 @@ if __name__ == '__main__':
 
     total, n = 0, 0
     for q, tile in enumerate(tiles.values[0]):
-        if tile is not None and q == 0:
-            # get correct quadrant
-            mac = quads[q]
+        # q == 0 & quads[0]         q == 3 & quads[1]       q == 6 & quads[2]           q == 8 & quads[3]
+        if tile is not None and q == 8:
+            # get corresponding quadrant
+            mac = quads[3]
             # read mod
             mod = cv2.imread(tile)
             # store scaling ratio
