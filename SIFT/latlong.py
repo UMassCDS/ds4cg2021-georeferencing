@@ -39,14 +39,14 @@ def ground_dist(latmac, lonmac, latsat, lonsat):
 
 
 # Converting the epsg:26986 to gps which is epsg:4326
-def coord2latlon(x1, y1):
+def maccoord2latlon(x1, y1):
     wgs84 = pyproj.Proj(projparams='epsg:4326')
     InputGrid = pyproj.Proj(projparams='epsg:26986')
     return pyproj.transform(InputGrid, wgs84, x1, y1)
 
 
 # the satellite vectors are in epsg:6347, converting it to that of mac for consistency
-def mod2maccoord(x1, y1):
-    mac_coord = pyproj.Proj(projparams='epsg:26986')
+def modcoord2latlon(x1, y1):
+    mac_coord = pyproj.Proj(projparams='epsg:4326')
     mod_coord = pyproj.Proj(projparams='epsg:6347')
     return pyproj.transform(mod_coord, mac_coord, x1, y1)
