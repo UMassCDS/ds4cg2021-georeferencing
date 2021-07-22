@@ -36,3 +36,10 @@ def make_quadrants(img):
     quadrants.append(l2)
     quadrants.append(r4)
     return quadrants
+
+
+def make_quadsofquads(img_quad):
+    img_oct=[]
+    for oct_i in img_quad:
+        img_oct.extend(make_quadrants(oct_i))
+    return img_oct
