@@ -43,3 +43,10 @@ def make_quadrants(img):
 def pixel2inches(mac, x, y):
     y = mac.shape[0] - y
     return x / 600, y / 600
+
+
+def make_quadsofquads(img_quad):
+    img_oct = []
+    for oct_i in img_quad:
+        img_oct.extend(make_quadrants(oct_i))
+    return img_oct

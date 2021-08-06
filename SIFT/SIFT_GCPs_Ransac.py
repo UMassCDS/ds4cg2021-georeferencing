@@ -11,8 +11,8 @@ import pandas as pd
 
 if __name__ == '__main__':
     # read mac
-    mac = cv2.imread('Images/mufs190-1952-dpb6h112-i001.reference.tif')
-    mac_img = gdal.Open('Images/mufs190-1952-dpb6h112-i001.reference.tif')
+    mac = cv2.imread('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/mufs190-1952-dpb6h112-i001.reference.tif')
+    mac_img = gdal.Open('C:/Users/sowmy/Desktop/DS4CG/GeoReferencing/GeoReferencing/mac_sample/bottom_1_gdal.tif')
     # get the quadrants for this image
     quads = imghelper.make_quadrants(mac)
     # define the new image scale
@@ -84,12 +84,11 @@ if __name__ == '__main__':
                     latmac, lonmac = latlonghelper.pixel2coord(mac_img, scaled_src[0], scaled_src[1])
                     latmod, lonmod = latlonghelper.pixel2coord(mod_img, scaled_dst[0], scaled_dst[1])
 
-                    # Converting Modern image coordinates to Mac CRS
-                    latmod, lonmod = latlonghelper.mod2maccoord(latmod, lonmod)
+                    # Converting Modern image coordinates to GPS CRS
+                    latmod, lonmod = latlonghelper.modcoord2latlon(latmod, lonmod)
 
-                    # Convert them into GPS CRS
-                    latmac, lonmac = latlonghelper.mac2latlon(latmac, lonmac)
-                    latmod, lonmod = latlonghelper.mac2latlon(latmod, lonmod)
+                    # Convert Mac coordinates into GPS CRS
+                    latmac, lonmac = latlonghelper.maccoord2latlon(latmac, lonmac)
 
                     # Calculate Distance
                     total += dst.distance((latmac, lonmac), (latmod, lonmod)).m
