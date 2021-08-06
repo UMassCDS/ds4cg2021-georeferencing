@@ -13,10 +13,11 @@ if __name__ == '__main__':
     # brute force feature matching of descriptors to match keypoints
     bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
 
-    with open('Data\\PropagationDistances.csv', 'w') as f:
-        f.write('Center,Tile1,PtDistance1,GCPDistance1,Tile2,PtDistance2,GCPDistance2,Tile3,PtDistance3,GCPDistance3,'
-                'Tile4,PtDistance4,GCPDistance4,Tile5,PtDistance5,GCPDistance5,Tile6,PtDistance6,GCPDistance6,'
-                'Tile7,PtDistance7,GCPDistance7,Tile8,PtDistance8,GCPDistance8\n')
+    with open('Data\\PropagationDistancesPerMatch.csv', 'w') as f:
+        f.write('Source,Target,PtDistance,')
+        for i in range(1, 300):
+            f.write(f'MatchDistance{i},')
+        f.write('MatchDistance300\n')
         mapping = pd.read_csv('Data\\MacConnellMapping.csv')
         c = 0
         for _, row in mapping.iterrows():
@@ -24,7 +25,6 @@ if __name__ == '__main__':
                    (row['Tile4'], row['Distance4']), (row['Tile5'], row['Distance5']), (row['Tile6'], row['Distance6']),
                    (row['Tile7'], row['Distance7']), (row['Tile8'], row['Distance8'])]
             REFPATH = row['Center']
-            f.write(f'{REFPATH}')
             X_SCALE = 600
             Y_SCALE = 600
 
@@ -38,10 +38,10 @@ if __name__ == '__main__':
 
             for elem in lst:
                 if elem[0] == 'None':
-                    f.write(f',{elem[0]},-1,-1')
+                    pass
                 else:
                     OVPATH = elem[0]
-                    f.write(f',{OVPATH},{elem[1]}')
+                    f.write(f'{REFPATH},{OVPATH},{elem[1]}')
                     # read overlapping mac
                     ovMac = cv2.imread(OVPATH)
 
@@ -59,8 +59,8 @@ if __name__ == '__main__':
                     descriptorsOvMac = sift.compute(grayOvMac, keypointsOvMac)[1]
 
                     #                              query            train
-                    matches = sorted(bf.match(descriptorsRef, descriptorsOvMac), key=lambda x: x.distance)
-                    top_matches = matches[:-int((len(matches) / 4) * 3)]
+                    top_matches = sorted(bf.match(descriptorsRef, descriptorsOvMac), key=lambda x: x.distance)
+                    # top_matches = matches[:-int((len(matches) / 4) * 3)]
 
                     # take all the points present in top_matches, find src and dist pts
                     src_pts = np.float32([keypointsRef[m.queryIdx].pt for m in top_matches]).reshape(-1, 1, 2)
@@ -72,8 +72,9 @@ if __name__ == '__main__':
                     matchesMask = mask.ravel().tolist()
 
                     # For all the matches in ransac find the pixel to coord for both images
-                    total, n = 0, 0
                     for i in range(0, len(matchesMask)):
+                        if i == 300:
+                            break
                         if matchesMask[i] == 1:
                             # scaling the pixel coordinates back to original sizes
                             scaled_src = [i / j for i, j in zip(src_pts[i][0], ref_resize)]
@@ -90,10 +91,8 @@ if __name__ == '__main__':
                             latOvMac, lonOvMac = latlonghelper.maccoord2latlon(CRSXOvMac, CRSYOvMac)
 
                             # calculate distance
-                            total += dst.distance((latRef, lonRef), (latOvMac, lonOvMac)).m
-                            n += 1
-
-                    f.write(f',{total / n}')
+                            dist = dst.distance((latRef, lonRef), (latOvMac, lonOvMac)).m
+                            f.write(f',{dist}')
             f.write('\n')
             c += 1
             print(f'{c / len(mapping["Center"]) * 100}% done')
