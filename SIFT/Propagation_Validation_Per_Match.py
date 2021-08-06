@@ -72,10 +72,10 @@ if __name__ == '__main__':
                     matchesMask = mask.ravel().tolist()
 
                     # For all the matches in ransac find the pixel to coord for both images
+                    count = 0
                     for i in range(0, len(matchesMask)):
-                        if i == 300:
-                            break
                         if matchesMask[i] == 1:
+                            count += 1
                             # scaling the pixel coordinates back to original sizes
                             scaled_src = [i / j for i, j in zip(src_pts[i][0], ref_resize)]
                             scaled_dst = [i / j for i, j in zip(dst_pts[i][0], ovMac_resize)]
@@ -93,6 +93,11 @@ if __name__ == '__main__':
                             # calculate distance
                             dist = dst.distance((latRef, lonRef), (latOvMac, lonOvMac)).m
                             f.write(f',{dist}')
-            f.write('\n')
-            c += 1
-            print(f'{c / len(mapping["Center"]) * 100}% done')
+                            if count == 300:
+                                break
+                    if count != 300:
+                        for i in range(count, 300):
+                            f.write(',-1')
+                    f.write('\n')
+                c += 1
+                print(f'{c / len(mapping["Center"]) * 100}% done')
