@@ -1,0 +1,35 @@
+# On Windows, remember to use '\\' and include the trailing '\\' at the end of pathnames.
+MACCONNELL:
+  # This application was originally developed for a particular set of historical images known as the MacConnell set.
+  # Some assumptions were made about this data that allows for fewer definitions in this config file. If you are
+  # using this application for another purpose or on another set of images, set 'USE' to 'False' and fill out 'OTHER'.
+  # Only one of 'MACCONNELL' or 'OTHER' needs to be filled out correctly.
+  USE: True
+  INPUT:
+    # This is the image code dpb6h109, cni1h111, etc. of the MANUALLY georeferenced image.
+    REF_CODE: dpn1k30
+    # The MacConnell images that overlap this image that you wish to georeference.
+    OVERLAPPING_CODES: dpn1k31
+    # The path to referenced MacConnell images. Assumed to be in the folder without subfolders.
+    REF_PATH: D:/MacConnell/Photos_Original_Georeferenced/
+    # The path to un-referenced MacConnell images. They should still be in their b001...b007 folders.
+    UNREF_PATH: D:/MacConnell/Photos_Original/
+    # The path to satellite images. If you do not have the satellite images available locally, set
+    # this to 'False' and only the necessary tiles will be downloaded before referencing the image.
+    SAT_PATH: D:/MacConnell/Photos_Satellite/
+    # Your initials to place in the GCP.txt filename.
+    INITIALS: CG
+    # The maximum number of potential GCPs you would like to see for each image.
+    MAX_GCPS: 25
+
+  OUTPUT:
+    # The location to save the GCP.txt file to.
+    GCP_OUTPUT_LOC: D:/MacConnell/Final/GCPs/
+    # The location to save the georeferenced TIFF file to.
+    REF_OUTPUT_LOC: D:/MacConnell/Final/Georeferenced/
+
+
+OTHER:
+  INPUT:
+    X_SCALE: 600
+    Y_SCALE: 600

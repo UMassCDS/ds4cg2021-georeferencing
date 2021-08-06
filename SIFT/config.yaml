@@ -1,0 +1,14 @@
+INPUT:
+  INITIALS: CG
+  REFPATH: D:\\MacConnell\\Photos_Georeferenced_Samples\\mufs190-1952-cni6h137-i001.reference.tif
+  OVPATH: D:\\MacConnell\\Photos_Georeferenced_Samples\\mufs190-1952-cni6h138-i001.reference.tif
+  STUB: dpb6h109
+  DEBUG: True
+
+  X_SCALE: 600
+  Y_SCALE: 600
+
+OUTPUT:
+  ORIG_FN: D:\\MacConnell\\Photos_Original\\b005\\NonAnnotated\\mufs190-1952-cni6h138-i001-001.tif
+  OUTPUT_FN: D:\\MacConnell\\Propagation\\mufs190-1952-cni6h138-i001.tif
+  EPSG: 4326

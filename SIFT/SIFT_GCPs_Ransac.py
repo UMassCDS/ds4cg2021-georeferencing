@@ -1,11 +1,13 @@
 import cv2
 import matplotlib.pyplot as plt
+from geopy import distance as dst
 import numpy as np
 import GCPs as helper
 import image_helper as imghelper
 import latlong as latlonghelper
 from osgeo import gdal
 import pandas as pd
+
 
 if __name__ == '__main__':
     # read mac
@@ -25,9 +27,9 @@ if __name__ == '__main__':
     total, n = 0, 0
     for q, tile in enumerate(tiles.values[0]):
         # q == 0 & quads[0]         q == 3 & quads[1]       q == 6 & quads[2]           q == 8 & quads[3]
-        if tile is not None and q == 8:
+        if tile is not None and q == 0:
             # get corresponding quadrant
-            mac = quads[3]
+            mac = quads[0]
             # read mod
             mod = cv2.imread(tile)
             # store scaling ratio
@@ -38,14 +40,15 @@ if __name__ == '__main__':
             mod = cv2.resize(mod, (x_scaled, y_scaled))
 
             # preprocess the images and generate keypoints from Harris Corner Detection
-            cornersMac, cornersMod, keypointsMac, keypointsMod = helper.preprocess_images(mac, mod)
+            grayMac, grayMod = helper.preprocess_images(mac, mod)
+            keypointsMac, keypointsMod = helper.compute_harris_corner_keypoints(grayMac, grayMod)
 
             # generate SIFT
             sift = cv2.SIFT_create()
 
             # generate keypoints and their descriptors
-            descriptorsMac = sift.compute(cornersMac, keypointsMac)[1]
-            descriptorsMod = sift.compute(cornersMod, keypointsMod)[1]
+            descriptorsMac = sift.compute(grayMac, keypointsMac)[1]
+            descriptorsMod = sift.compute(grayMod, keypointsMod)[1]
 
             # brute force feature matching of descriptors to match keypoints
             bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
@@ -54,8 +57,8 @@ if __name__ == '__main__':
             top_matches = matches[:-int((len(matches) / 4) * 3)]
 
             # take all the points present in top_matches, find src and dist pts
-            src_pts = np.float32([keypointsMac[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-            dst_pts = np.float32([keypointsMod[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+            src_pts = np.float32([keypointsMac[m.queryIdx].pt for m in top_matches]).reshape(-1, 1, 2)
+            dst_pts = np.float32([keypointsMod[m.trainIdx].pt for m in top_matches]).reshape(-1, 1, 2)
 
             # apply RANSAC
             M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
@@ -64,8 +67,8 @@ if __name__ == '__main__':
 
             # h, w = cornersMac.shape
             # pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
-            # dst = cv2.perspectiveTransform(pts, M)
-            # img2 = cv2.polylines(cornersMod, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
+            # trans = cv2.perspectiveTransform(pts, M)
+            # img2 = cv2.polylines(cornersMod, [np.int32(trans)], True, 255, 3, cv2.LINE_AA)
 
             # Reading the same images using gdal to obtain EPSG info
             mod_img = gdal.Open(tile, gdal.GA_ReadOnly)
@@ -85,16 +88,14 @@ if __name__ == '__main__':
                     latmod, lonmod = latlonghelper.mod2maccoord(latmod, lonmod)
 
                     # Convert them into GPS CRS
-                    latmac, lonmac = latlonghelper.coord2latlon(latmac, lonmac)
-                    latmod, lonmod = latlonghelper.coord2latlon(latmod, lonmod)
+                    latmac, lonmac = latlonghelper.mac2latlon(latmac, lonmac)
+                    latmod, lonmod = latlonghelper.mac2latlon(latmod, lonmod)
 
                     # Calculate Distance
-                    distance = latlonghelper.ground_dist(latmac, lonmac, latmod, lonmod)
-                    total += distance
+                    total += dst.distance((latmac, lonmac), (latmod, lonmod)).m
                     n += 1
 
             draw_params = dict(matchesMask=matchesMask, flags=2)
-            img3 = cv2.drawMatches(mac, keypointsMac, mod, keypointsMod, matches, None, **draw_params)
+            img3 = cv2.drawMatches(mac, keypointsMac, mod, keypointsMod, top_matches, None, **draw_params)
+            plt.title(f'Average distance: {total / n} meters over {n} total matches')
             plt.imshow(img3, 'gray'), plt.show()
-
-    print(f'Average distance: {total / n} KMs')

@@ -2,6 +2,7 @@ import pandas as pd
 from shapely.geometry import Point, Polygon
 
 pd.set_option('display.max_colwidth', None)
+pd.set_option('display.max_rowwidth', None)
 
 
 # returns true if the point is in the polygon specified by the points in the passed row
