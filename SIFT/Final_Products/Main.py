@@ -1,33 +1,26 @@
 import os
+import sys
 import shutil
 import cv2
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import Functions as helper
 from osgeo import gdal, osr
 from datetime import date
-import sys
+import logging
 
-# TODO: Search entire directory recursively to find the right files
-# TODO: Implement logger
-# TODO: Take 25 matches from across the image
+
 if __name__ == '__main__':
-    macCoords = pd.read_csv('Data/MacConnellCoords.csv')
-    # Set spatial reference:
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     sr = osr.SpatialReference()
-    sr.ImportFromEPSG(4326)
     # generate SIFT
     sift = cv2.SIFT_create()
     # brute force feature matching of descriptors to match keypoints
     bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
 
+    # read config and set parameters
     filenames = []
     refFn = None
-    x_scaled = 600
-    y_scaled = 600
-    maxGCPs = 25
-    # read config and set parameters
     mac = helper.read_yaml('config.yaml')['MACCONNELL']
     if mac['USE'] is True:
         inp = mac['INPUT']
@@ -37,45 +30,98 @@ if __name__ == '__main__':
         ovCodes = [code.strip() for code in inp['OVERLAPPING_CODES'].split(',')]
         unrefPath = inp['UNREF_PATH']
         refPath = inp['REF_PATH']
-        satPath = inp['SAT_PATH']
         initials = inp['INITIALS']
         maxGCPs = inp['MAX_GCPS']
         GCPOut = out['GCP_OUTPUT_LOC']
         refOut = out['REF_OUTPUT_LOC']
+        x_scaled = 600
+        y_scaled = 600
+        ransacThresh = 5
+        DPI = 600
+        blockSize = 2
+        sobK = 3
+        harK = 0.04
+        # set spatial reference
+        sr.ImportFromEPSG(26986)
+        logging.info('Spatial reference set to EPSG:26986.')
 
+        # get filenames associated with each of the overlapping MacConnell images
         for code in ovCodes:
-            GCP_fname = f'{GCPOut}{code}_GCPs_{initials}_{date.today().strftime("%Y%m%d")}.txt'
+            GCP_fname = os.path.join(GCPOut, f'{code}_GCPs_{initials}_{date.today().strftime("%Y%m%d")}.txt')
+            if os.path.exists(GCP_fname):
+                logging.warning(f'{GCP_fname} already exists...Overwriting.')
+            else:
+                logging.info(f'{GCP_fname} created.')
             orig_fn = None
             found = False
-            for fn in macCoords['Filename']:
-                if code == fn.split('\\')[-1].split('-')[-3] and fn.split('\\')[-1][-3:] == 'tif':
-                    temp = fn[30:].replace('\\', '/')
-                    orig_fn = f'{unrefPath}{temp}'
-                    if found:
-                        print(f'Found more than one TIFF file with code {code} in folder {unrefPath}.')
-                        sys.exit(1)
-                    found = True
+            save = None
+            # walk the directory to find the TIF file associated with this code
+            for root, _, files in os.walk(unrefPath):
+                for fn in files:
+                    if fn[-3:] == 'tif' and code in fn.split('-'):
+                        if found:
+                            # found more than one TIFF file with this code
+                            logging.error(f'Found more than one TIFF file with code {code} in folder {unrefPath}.')
+                            sys.exit(1)
+                        orig_fn = os.path.join(root, fn)
+                        save = fn
+                        found = True
             if orig_fn is None:
-                print(f'Could not find an unreferenced MacConnell image with code {code} in folder {unrefPath}.')
+                # found no TIFF file with this code
+                logging.error(f"Couldn't find an unreferenced MacConnell image with code {code} in folder {unrefPath}.")
                 sys.exit(1)
-            output_fn = f'{refOut}{orig_fn.split("/")[-1][:-4]}.reference.tif'
-            filenames.append((orig_fn, output_fn, GCP_fname))
+            else:
+                logging.info(f'Found unreferenced image {orig_fn}.')
+                output_fn = os.path.join(refOut, f'{save[:-4]}.reference.tif')
+                if os.path.exists(output_fn):
+                    logging.warning(f'{output_fn} already exists...Overwriting.')
+                filenames.append((orig_fn, output_fn, GCP_fname))
 
         found = False
-        for fn in os.listdir(refPath):
-            if refCode == fn.split('-')[-3] and fn[-3:] == 'tif':
-                refFn = refPath + fn
-                if found:
-                    print(f'Found more than one TIFF file with code {refCode} in folder {refPath}.')
-                    sys.exit(1)
-                found = True
+        for root, _, files in os.walk(refPath):
+            for fn in files:
+                if fn[-3:] == 'tif' and refCode in fn.split('-'):
+                    if found:
+                        logging.error(f'Found more than one TIFF file with code {refCode} in folder {refPath}.')
+                        sys.exit(1)
+                    refFn = os.path.join(root, fn)
+                    found = True
         if refFn is None:
-            print(f'Could not find georeferenced MacConnell image with code {refCode} in folder {refPath}.')
+            logging.error(f"Couldn't find georeferenced MacConnell image with code {refCode} in folder {refPath}.")
             sys.exit(1)
+        else:
+            logging.info(f'Found referenced image {refFn}.')
 
     else:
         inp = helper.read_yaml('config.yaml')['OTHER']['INPUT']
         out = helper.read_yaml('config.yaml')['OTHER']['OUTPUT']
+        x_scaled = inp['X_SCALE']
+        y_scaled = inp['Y_SCALE']
+        # set spatial reference
+        sr.ImportFromEPSG(inp['EPSG'])
+        logging.info(f'Spatial reference set to EPSG:{inp["EPSG"]}.')
+        refFn = inp['REF_PATH']
+        maxGCPs = inp['MAX_GCPS']
+        DPI = inp['DPI']
+        ransacThresh = inp['RANSAC_THRESHOLD']
+        blockSize = inp['BLOCK_SIZE']
+        sobK = inp['SOBEL_K']
+        harK = inp['HARRIS_K']
+        GCPOut = out['GCP_OUTPUT_LOC']
+        refOut = out['REF_OUTPUT_LOC']
+
+        for path in [path.strip() for path in inp['UNREF_PATHS'].split(',')]:
+            GCP_fname = os.path.join(GCPOut, f'{path.split("/")[-1][:-4]}_GCPs_{date.today().strftime("%Y%m%d")}.txt')
+            if os.path.exists(GCP_fname):
+                logging.warning(f'{GCP_fname} already exists...Overwriting.')
+            else:
+                logging.info(f'{GCP_fname} created.')
+
+            output_fn = os.path.join(refOut, f'{path.split("/")[-1][:-4]}.reference.tif')
+            if os.path.exists(output_fn):
+                logging.warning(f'{output_fn} already exists...Overwriting.')
+
+            filenames.append((path, output_fn, GCP_fname))
 
     # read original referenced image
     refOG = cv2.imread(refFn)
@@ -88,6 +134,7 @@ if __name__ == '__main__':
         with open(GCP_fname, 'w') as f:
             # Create a copy of the original file and save it as the output filename:
             shutil.copy(orig_fn, output_fn)
+            logging.info(f'{output_fn} created.')
             # Open the output file for writing for writing:
             ds = gdal.Open(output_fn, gdal.GA_Update)
 
@@ -101,53 +148,74 @@ if __name__ == '__main__':
 
             # preprocess the images and generate keypoints from Harris Corner Detection
             grayRef, grayOvMac = helper.preprocess_images(ref, ovMac)
-            keypointsRef, keypointsOvMac = helper.compute_harris_corner_keypoints(grayRef, grayOvMac)
+            logging.debug('Images preprocessed.')
+
+            keypointsRef, keypointsOvMac = helper.compute_harris_corner_keypoints(grayRef, grayOvMac, blockSize, sobK,
+                                                                                  harK)
+            logging.debug('Keypoints detected with Harris Corner Detection.')
 
             # generate keypoints and their descriptors
             descriptorsRef = sift.compute(grayRef, keypointsRef)[1]
             descriptorsOvMac = sift.compute(grayOvMac, keypointsOvMac)[1]
+            logging.debug('Descriptors computed with SIFT.')
 
-            #                                  query            train
-            top_matches = sorted(bf.match(descriptorsRef, descriptorsOvMac), key=lambda x: x.distance)
-            # top_matches = matches[:maxGCPs]
-            # top_matches = matches[:-int((len(matches) / 4) * 3)]
+            #                              query            train
+            matches = sorted(bf.match(descriptorsRef, descriptorsOvMac), key=lambda x: x.distance)
+            logging.debug('Matches found with brute force algorithm.')
+            if len(matches) == 0:
+                logging.error('No potential GCPs... Make sure the images are truly overlapping and have features to '
+                              'match on.')
+                sys.exit(1)
 
-            # take all the points present in top_matches, find src and dist pts
-            src_pts = np.float32([keypointsRef[m.queryIdx].pt for m in top_matches]).reshape(-1, 1, 2)
-            dst_pts = np.float32([keypointsOvMac[m.trainIdx].pt for m in top_matches]).reshape(-1, 1, 2)
-
+            # take all the points present in distributed_matches, find src and dist pts
+            src_pts = np.float32([keypointsRef[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+            dst_pts = np.float32([keypointsOvMac[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
             # apply RANSAC
-            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, ransacThresh)
+            logging.debug('Inliers calculated with RANSAC')
             # value is 1 for the inliers from RANSAC
             matchesMask = mask.ravel().tolist()
+            top_matches = [match for i, match in enumerate(matches) if matchesMask[i] == 1]
+            if not any(matchesMask):
+                logging.error('None of the potential GCPs were found to be appropriate for georeferencing... '
+                              'Make sure the images are truly overlapping and have features to match on.')
+                sys.exit(1)
+            else:
+                logging.info(f'Found {len(matches)} total potential GCPs... Selecting {maxGCPs} evenly distributed '
+                             f'GCPs from RANSAC\'s {len(top_matches)} inliers.')
 
-            # For all the matches in ransac find the pixel to coord for both images
+            # select maxGCPs matches evenly distributed throughout the image
+            distributed_matches = helper.select_matches(top_matches, keypointsOvMac, maxGCPs)
+            logging.debug('Evenly distributed matches found.')
+            # take all the points present in distributed_matches, find src and dist pts
+            src_pts = np.float32([keypointsRef[m.queryIdx].pt for m in distributed_matches]).reshape(-1, 1, 2)
+            dst_pts = np.float32([keypointsOvMac[m.trainIdx].pt for m in distributed_matches]).reshape(-1, 1, 2)
+
+            # write all the selected matches and apply them to the unreferenced image
             gcps = []
-            for i in range(0, len(matchesMask)):
-                if matchesMask[i] == 1:
-                    # scaling the pixel coordinates back to original sizes
-                    scaled_src = [i / j for i, j in zip(src_pts[i][0], ref_resize)]
-                    scaled_dst = [i / j for i, j in zip(dst_pts[i][0], ovMac_resize)]
+            logging.info(f'Writing GCPs to {GCP_fname} and applying them to {output_fn}...')
+            for i in range(len(distributed_matches)):
+                # scaling the pixel coordinates back to original sizes
+                scaled_src = [k / j for k, j in zip(src_pts[i][0], ref_resize)]
+                scaled_dst = [k / j for k, j in zip(dst_pts[i][0], ovMac_resize)]
 
-                    # converting the pixel to coordinates in corresponding systems
-                    CRSXRef, CRSYRef = helper.pixel2coord(gdal.Open(refFn), scaled_src[0], scaled_src[1])
+                # converting the pixel to coordinates in corresponding systems
+                CRSXRef, CRSYRef = helper.pixel2coord(gdal.Open(refFn), scaled_src[0], scaled_src[1])
 
-                    # convert them into GPS CRS
-                    latRef, lonRef = helper.mac2latlon(CRSXRef, CRSYRef)
+                # add the GCP
+                gcps.append(gdal.GCP(CRSXRef, CRSYRef, 0, int(scaled_dst[0]), int(scaled_dst[1])))
 
-                    # add the GCP
-                    gcps.append(gdal.GCP(lonRef, latRef, 0, int(scaled_dst[0]), int(scaled_dst[1])))
+                # calculate the inch coords for a GCP based on the pixel coords
+                ovX, ovY = helper.pixel2inches(refOG, scaled_dst[0], scaled_dst[1], DPI)
+                # write the GCPs to the text file
+                ovX = format(np.round(ovX, 8), ".8f")
+                ovY = format(np.round(ovY, 8), ".8f")
+                f.write(f'{ovX}\t{ovY}\t{np.round(CRSXRef, 8)}\t{np.round(CRSYRef, 8)}\n')
+            logging.debug('All GCPs written and applied.')
 
-                    # calculate the inch coords for a GCP based on the pixel coords
-                    ovX, ovY = helper.pixel2inches(refOG, scaled_dst[0], scaled_dst[1])
-                    # write the GCPs to the text file
-                    ovX = format(np.round(ovX, 8), ".8f")
-                    ovY = format(np.round(ovY, 8), ".8f")
-                    f.write(f'{ovX}\t{ovY}\t{np.round(CRSXRef, 8)}\t{np.round(CRSYRef, 8)}\n')
-
-            draw_params = dict(matchesMask=matchesMask, flags=2)
-            img3 = cv2.drawMatches(ref, keypointsRef, ovMac, keypointsOvMac, top_matches, None, **draw_params)
+            img3 = cv2.drawMatches(ref, keypointsRef, ovMac, keypointsOvMac, distributed_matches, None, flags=2)
             plt.imshow(img3, 'gray'), plt.show()
 
         # Apply the GCPs to the open output file:
         ds.SetGCPs(gcps, sr.ExportToWkt())
+        logging.info('Completed!')

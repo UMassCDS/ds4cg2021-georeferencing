@@ -12,7 +12,6 @@ def pixel2coord(img, col, row):
 
 
 # Converting the epsg:26986 to gps which is epsg:4326
-
 def maccoord2latlon(x1, y1):
     wgs84 = pyproj.Proj(projparams='epsg:4326')
     InputGrid = pyproj.Proj(projparams='epsg:26986')

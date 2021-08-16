@@ -95,8 +95,8 @@ if __name__ == '__main__':
                 CRSXOvMac, CRSYOvMac = latlonghelper.pixel2coord(gdal.Open(ovPath), scaled_dst[0], scaled_dst[1])
 
                 # convert them into GPS CRS
-                latRef, lonRef = latlonghelper.mac2latlon(CRSXRef, CRSYRef)
-                latOvMac, lonOvMac = latlonghelper.mac2latlon(CRSXOvMac, CRSYOvMac)
+                latRef, lonRef = latlonghelper.maccoord2latlon(CRSXRef, CRSYRef)
+                latOvMac, lonOvMac = latlonghelper.maccoord2latlon(CRSXOvMac, CRSYOvMac)
 
                 # calculate distance
                 total += dst.distance((latRef, lonRef), (latOvMac, lonOvMac)).m
