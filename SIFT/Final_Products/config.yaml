@@ -3,7 +3,7 @@ MACCONNELL:
   # Some assumptions can be made due to what we know about this data that allows for specialized definitions in this
   # config file. If you are using this application for another purpose or on another set of images, set 'USE' to 'False'
   # and fill out 'OTHER'. Only one of 'MACCONNELL' or 'OTHER' needs to be filled out correctly.
-  USE: False
+  USE: True
   INPUT:
     # This is the image code dpb6h109, cni1h111, etc. of the MANUALLY georeferenced image.
     REF_CODE: cni3h80

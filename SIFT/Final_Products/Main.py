@@ -72,10 +72,10 @@ if __name__ == '__main__':
                 sys.exit(1)
             else:
                 logging.info(f'Found unreferenced image {orig_fn}.')
-                output_fn = os.path.join(refOut, f'{save[:-4]}.reference.tif')
-                if os.path.exists(output_fn):
-                    logging.warning(f'{output_fn} already exists...Overwriting.')
-                filenames.append((orig_fn, output_fn, GCP_fname))
+                output_fn_temp = os.path.join(refOut, f'{save[:-4]}_temp.reference.tif')
+                if os.path.exists(output_fn_temp):
+                    logging.warning(f'{output_fn_temp} already exists...Overwriting.')
+                filenames.append((orig_fn, output_fn_temp, GCP_fname))
 
         found = False
         for root, _, files in os.walk(refPath):
@@ -117,11 +117,11 @@ if __name__ == '__main__':
             else:
                 logging.info(f'{GCP_fname} created.')
 
-            output_fn = os.path.join(refOut, f'{path.split("/")[-1][:-4]}.reference.tif')
-            if os.path.exists(output_fn):
-                logging.warning(f'{output_fn} already exists...Overwriting.')
+            output_fn_temp = os.path.join(refOut, f'{path.split("/")[-1][:-4]}.reference.tif')
+            if os.path.exists(output_fn_temp):
+                logging.warning(f'{output_fn_temp} already exists...Overwriting.')
 
-            filenames.append((path, output_fn, GCP_fname))
+            filenames.append((path, output_fn_temp, GCP_fname))
 
     # read original referenced image
     refOG = cv2.imread(refFn)
@@ -130,13 +130,13 @@ if __name__ == '__main__':
     # resize the images
     ref = cv2.resize(refOG, (x_scaled, y_scaled))
 
-    for orig_fn, output_fn, GCP_fname in filenames:
+    for orig_fn, output_fn_temp, GCP_fname in filenames:
         with open(GCP_fname, 'w') as f:
             # Create a copy of the original file and save it as the output filename:
-            shutil.copy(orig_fn, output_fn)
-            logging.info(f'{output_fn} created.')
+            shutil.copy(orig_fn, output_fn_temp)
+            logging.info(f'{output_fn_temp} created.')
             # Open the output file for writing for writing:
-            ds = gdal.Open(output_fn, gdal.GA_Update)
+            ds = gdal.Open(output_fn_temp, gdal.GA_Update)
 
             # read overlapping mac
             ovMac = cv2.imread(orig_fn)
@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
             # write all the selected matches and apply them to the unreferenced image
             gcps = []
-            logging.info(f'Writing GCPs to {GCP_fname} and applying them to {output_fn}...')
+            logging.info(f'Writing GCPs to {GCP_fname} and applying them to {output_fn_temp}...')
             for i in range(len(distributed_matches)):
                 # scaling the pixel coordinates back to original sizes
                 scaled_src = [k / j for k, j in zip(src_pts[i][0], ref_resize)]
@@ -216,6 +216,11 @@ if __name__ == '__main__':
             img3 = cv2.drawMatches(ref, keypointsRef, ovMac, keypointsOvMac, distributed_matches, None, flags=2)
             plt.imshow(img3, 'gray'), plt.show()
 
-        # Apply the GCPs to the open output file:
+        # apply the GCPs to the open output file
+        output_fn = output_fn_temp.replace('_temp', '')
+        srs = sr.ExportToWkt()
         ds.SetGCPs(gcps, sr.ExportToWkt())
+        # ds = gdal.Translate(output_fn, ds, options=gdal.TranslateOptions(GCPs=gcps, outputSRS=sr.ExportToWkt(),
+        #                                                                  resampleAlg='near'))
+        gdal.Warp(output_fn, ds, options=gdal.WarpOptions(polynomialOrder=2, srcSRS=srs, dstSRS=srs))
         logging.info('Completed!')
