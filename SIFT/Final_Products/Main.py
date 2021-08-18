@@ -73,8 +73,8 @@ if __name__ == '__main__':
             else:
                 logging.info(f'Found unreferenced image {orig_fn}.')
                 output_fn_temp = os.path.join(refOut, f'{save[:-4]}_temp.reference.tif')
-                if os.path.exists(output_fn_temp):
-                    logging.warning(f'{output_fn_temp} already exists...Overwriting.')
+                if os.path.exists(output_fn_temp.replace('_temp', '')):
+                    logging.warning(f'{output_fn_temp.replace("_temp", "")} already exists...Overwriting.')
                 filenames.append((orig_fn, output_fn_temp, GCP_fname))
 
         found = False
@@ -118,8 +118,8 @@ if __name__ == '__main__':
                 logging.info(f'{GCP_fname} created.')
 
             output_fn_temp = os.path.join(refOut, f'{path.split("/")[-1][:-4]}.reference.tif')
-            if os.path.exists(output_fn_temp):
-                logging.warning(f'{output_fn_temp} already exists...Overwriting.')
+            if os.path.exists(output_fn_temp.replace('_temp', '')):
+                logging.warning(f'{output_fn_temp.replace("_temp", "")} already exists...Overwriting.')
 
             filenames.append((path, output_fn_temp, GCP_fname))
 
@@ -134,8 +134,9 @@ if __name__ == '__main__':
         with open(GCP_fname, 'w') as f:
             # Create a copy of the original file and save it as the output filename:
             shutil.copy(orig_fn, output_fn_temp)
-            logging.info(f'{output_fn_temp} created.')
+            logging.info(f'{output_fn_temp.replace("_temp", "")} created.')
             # Open the output file for writing for writing:
+            # noinspection PyRedeclaration
             ds = gdal.Open(output_fn_temp, gdal.GA_Update)
 
             # read overlapping mac
@@ -193,7 +194,7 @@ if __name__ == '__main__':
 
             # write all the selected matches and apply them to the unreferenced image
             gcps = []
-            logging.info(f'Writing GCPs to {GCP_fname} and applying them to {output_fn_temp}...')
+            logging.info(f'Writing GCPs to {GCP_fname} and applying them to {output_fn_temp.replace("_temp", "")}...')
             for i in range(len(distributed_matches)):
                 # scaling the pixel coordinates back to original sizes
                 scaled_src = [k / j for k, j in zip(src_pts[i][0], ref_resize)]
@@ -223,4 +224,6 @@ if __name__ == '__main__':
         # ds = gdal.Translate(output_fn, ds, options=gdal.TranslateOptions(GCPs=gcps, outputSRS=sr.ExportToWkt(),
         #                                                                  resampleAlg='near'))
         gdal.Warp(output_fn, ds, options=gdal.WarpOptions(polynomialOrder=2, srcSRS=srs, dstSRS=srs))
+        ds = None
+        os.remove(output_fn_temp)
         logging.info('Completed!')
