@@ -8,7 +8,7 @@ The bare minumum understanding to use this application is a basic understanding 
 Next, open the Terminal (on MacOS) or Command Prompt (on Windows), navigate to the directory you want the application in, and execute the following commands. You can copy and paste them one by one or all at once.
 
 ### Windows
-`git clone https://github.com/cdgiguere/DS4CG-Automatic-Georeferencing.git`
+`git clone https://github.com/UMassCDS/ds4cg2021-georeferencing.git`
 
 `cd DS4CG-Automatic-Georeferencing\`
 
