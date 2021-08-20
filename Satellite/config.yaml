@@ -1,0 +1,19 @@
+# This application is currently only set up to work with the MacConnell set specifically.
+INPUT:
+  # The path to un-referenced MacConnell images.
+  MAC_PATH: D:/MacConnell/Photos_Original/
+  # The path to satellite images. Assumed to be in 18TXM930575/18TXM930575.jp2 format.
+  SAT_PATH: D:/MacConnell/Photos_Satellite/
+  # If tiles Satellite tiles are available in the path write the value as True, else False
+  SAT_AVAILABLE: True
+  # Your initials to place in the GCP.txt filename.
+  INITIALS: SV
+  # The maximum number of potential GCPs you would like to see for each of the 9 satellite tiles. The total number of
+  # GCPs will then be 9 * MAX_GCPS
+  MAX_GCPS: 2
+
+OUTPUT:
+  # The location to save the GCP.txt file to.
+  GCP_OUTPUT_LOC: D:/MacConnell/Final/GCPs/
+  # The location to save the georeferenced TIFF file to.
+  REF_OUTPUT_LOC: D:/MacConnell/Final/Georeferenced/
