@@ -29,7 +29,7 @@ Next, open the Terminal (on MacOS) or Command Prompt (on Windows), navigate to t
 ### MacOS/UNIX
 `git clone https://github.com/cdgiguere/DS4CG-Automatic-Georeferencing.git`
 
-`cd DS4CG-Automatic-Georeferencing/`
+`cd ds4cg2021-georeferencing/`
 
 `python3 -m pip install --user --upgrade pip`
 
