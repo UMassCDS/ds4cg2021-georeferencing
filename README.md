@@ -49,4 +49,4 @@ In this examples cni3h80 is treated as the referenced file and cni3h81 and cni3h
 
 `py Propagate.py path\to\referenced_image path\to\unreferenced_image path\to\unreferenced_image ...`
 
-2) The Satellite pipeline is not currently available for anything but the MacConnell set since more information is needed about the location and size of the unreferenced image. We still provide the code, however, for future research contributions.
+2) The propagation pipeline will work for any two input images, but you must have the satellite/drone images ready at hand. The Satellite pipeline uses information known about specifically the MacConnell Collection to retrieve the satellite tiles needed on demand. The Satellite pipeline is not currently available for anything but the MacConnell Collection since more information is needed about the location and size of the unreferenced image. We still provide the code, however, for future research contributions.
